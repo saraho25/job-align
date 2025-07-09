@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Role ⇒ Your Fit</title>
+  <style>
+    body { font-family: sans-serif; padding:1rem; }
+    textarea { width:100%; height:6em; margin-bottom:.5rem; }
+    table { width:100%; border-collapse: collapse; margin-top:1rem; }
+    th, td { border:1px solid #ccc; padding:.5rem; text-align:left; }
+  </style>
+</head>
+<body>
+  <h1>Paste JD vs. Your Fit</h1>
+  <div id="form">
+    <label>Responsibilities (one per line):</label>
+    <textarea id="resps"></textarea>
+    <label>Your matching experience (one per line):</label>
+    <textarea id="exps"></textarea>
+    <button onclick="onGenerate()">Generate Table & Share Link</button>
+  </div>
+  <div id="table"></div>
+
+  <script>
+    function buildTable(resps, exps) {
+      const tbl = document.createElement('table');
+      const header = tbl.insertRow();
+      header.innerHTML = '<th>JD</th><th>Your Experience</th>';
+      resps.forEach((r,i) => {
+        const row = tbl.insertRow();
+        row.insertCell().textContent = r;
+        row.insertCell().textContent = (exps[i] || '');
+      });
+      document.getElementById('table').innerHTML = '';
+      document.getElementById('table').appendChild(tbl);
+    }
+
+    function onGenerate() {
+      const resps = document.getElementById('resps').value.trim().split('\n');
+      const exps  = document.getElementById('exps' ).value.trim().split('\n');
+      const data  = btoa(JSON.stringify([resps,exps]));
+      location.search = '?data=' + data;
+    }
+
+    window.onload = () => {
+      const p = new URLSearchParams(location.search).get('data');
+      if (p) {
+        const [resps,exps] = JSON.parse(atob(p));
+        document.getElementById('form').style.display = 'none';
+        buildTable(resps, exps);
+      }
+    };
+  </script>
+</body>
+</html>
