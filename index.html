@@ -21,10 +21,26 @@
 
   <script>
     function parseMarkdownTable(md) {
-      const lines = md.trim().split('\n').filter(line => line.includes('|'));
-      if (lines.length < 2) return null;
-      const header = lines[0].split('|').map(s => s.trim()).filter((_,i) => i>0 && i<lines[0].split('|').length-1);
-      const rows = lines.slice(2).map(line => line.split('|').map(s => s.trim()).filter((_,i) => i>0 && i<line.split('|').length-1));
+      const lines = md.trim().split('\n');
+      // find header and separator
+      let headerLineIndex = lines.findIndex(line => /^\s*\|.*\|\s*$/.test(line));
+      if (headerLineIndex < 0 || headerLineIndex + 1 >= lines.length) return null;
+      let sepLine = lines[headerLineIndex + 1];
+      if (!/^\s*\|?[-\s|:]+\|?\s*$/.test(sepLine)) return null;
+      const header = lines[headerLineIndex]
+        .replace(/^\s*\||\|\s*$/g, '')
+        .split('|')
+        .map(s => s.trim());
+      const rows = [];
+      for (let i = headerLineIndex + 2; i < lines.length; i++) {
+        const line = lines[i];
+        if (!/^\s*\|.*\|\s*$/.test(line)) break;
+        const cols = line
+          .replace(/^\s*\||\|\s*$/g, '')
+          .split('|')
+          .map(s => s.trim());
+        rows.push(cols);
+      }
       const tbl = document.createElement('table');
       const thead = tbl.createTHead().insertRow();
       header.forEach(text => {
@@ -33,7 +49,10 @@
       const tbody = tbl.createTBody();
       rows.forEach(cols => {
         const row = tbody.insertRow();
-        cols.forEach(text => row.insertCell().innerHTML = text);
+        cols.forEach(text => {
+          const cell = row.insertCell();
+          cell.innerHTML = text;
+        });
       });
       return tbl;
     }
@@ -50,7 +69,11 @@
         const md = decodeURIComponent(escape(atob(param)));
         document.getElementById('form').style.display = 'none';
         const table = parseMarkdownTable(md);
-        if (table) document.getElementById('tableContainer').appendChild(table);
+        if (table) {
+          document.getElementById('tableContainer').appendChild(table);
+        } else {
+          document.getElementById('mdInput').value = md; // show input again
+        }
       }
     };
   </script>
