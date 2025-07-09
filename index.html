@@ -2,52 +2,55 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Role ⇒ Your Fit</title>
+  <title>Job Alignment Chart</title>
   <style>
-    body { font-family: sans-serif; padding:1rem; }
-    textarea { width:100%; height:6em; margin-bottom:.5rem; }
-    table { width:100%; border-collapse: collapse; margin-top:1rem; }
-    th, td { border:1px solid #ccc; padding:.5rem; text-align:left; }
+    body { font-family: sans-serif; padding: 1rem; }
+    textarea { width: 100%; height: 12em; margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: .5rem; text-align: left; }
+    #form { display: block; }
   </style>
 </head>
 <body>
-  <h1>Paste JD vs. Your Fit</h1>
+  <h1>Paste Your Markdown Table</h1>
   <div id="form">
-    <label>Responsibilities (one per line):</label>
-    <textarea id="resps"></textarea>
-    <label>Your matching experience (one per line):</label>
-    <textarea id="exps"></textarea>
-    <button onclick="onGenerate()">Generate Table & Share Link</button>
+    <textarea id="mdInput" placeholder="Paste the entire markdown table here"></textarea>
+    <button onclick="onGenerate()">Generate & Share Link</button>
   </div>
-  <div id="table"></div>
+  <div id="tableContainer"></div>
 
   <script>
-    function buildTable(resps, exps) {
+    function parseMarkdownTable(md) {
+      const lines = md.trim().split('\n').filter(line => line.includes('|'));
+      if (lines.length < 2) return null;
+      const header = lines[0].split('|').map(s => s.trim()).filter((_,i) => i>0 && i<lines[0].split('|').length-1);
+      const rows = lines.slice(2).map(line => line.split('|').map(s => s.trim()).filter((_,i) => i>0 && i<line.split('|').length-1));
       const tbl = document.createElement('table');
-      const header = tbl.insertRow();
-      header.innerHTML = '<th>JD</th><th>Your Experience</th>';
-      resps.forEach((r,i) => {
-        const row = tbl.insertRow();
-        row.insertCell().textContent = r;
-        row.insertCell().textContent = (exps[i] || '');
+      const thead = tbl.createTHead().insertRow();
+      header.forEach(text => {
+        const th = document.createElement('th'); th.textContent = text; thead.appendChild(th);
       });
-      document.getElementById('table').innerHTML = '';
-      document.getElementById('table').appendChild(tbl);
+      const tbody = tbl.createTBody();
+      rows.forEach(cols => {
+        const row = tbody.insertRow();
+        cols.forEach(text => row.insertCell().innerHTML = text);
+      });
+      return tbl;
     }
 
     function onGenerate() {
-      const resps = document.getElementById('resps').value.trim().split('\n');
-      const exps  = document.getElementById('exps' ).value.trim().split('\n');
-      const data  = btoa(JSON.stringify([resps,exps]));
-      location.search = '?data=' + data;
+      const md = document.getElementById('mdInput').value;
+      const data = btoa(unescape(encodeURIComponent(md)));
+      location.search = '?md=' + data;
     }
 
     window.onload = () => {
-      const p = new URLSearchParams(location.search).get('data');
-      if (p) {
-        const [resps,exps] = JSON.parse(atob(p));
+      const param = new URLSearchParams(location.search).get('md');
+      if (param) {
+        const md = decodeURIComponent(escape(atob(param)));
         document.getElementById('form').style.display = 'none';
-        buildTable(resps, exps);
+        const table = parseMarkdownTable(md);
+        if (table) document.getElementById('tableContainer').appendChild(table);
       }
     };
   </script>
